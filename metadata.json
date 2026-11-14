@@ -1,0 +1,6 @@
+{
+  "name": "TidalVolt",
+  "description": "Electric vehicle intelligence platform with BMS telemetry, AI-powered vehicle insights, charging analytics, trip history, range estimation and EV cost comparisons.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
