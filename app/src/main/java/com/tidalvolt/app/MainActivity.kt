@@ -16,8 +16,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import java.util.Locale
 
 private val Ink = Color(0xFF080B0E)
@@ -201,8 +205,64 @@ private fun DrivingPage(modifier: Modifier = Modifier) {
 
 @Composable
 private fun MorePage(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val credentials = remember {
+        val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+        EncryptedSharedPreferences.create(
+            context,
+            "tidalvolt_secure_settings",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
+    var apiKey by remember { mutableStateOf(credentials.getString("abrp_api_key", "") ?: "") }
+    var userToken by remember { mutableStateOf(credentials.getString("abrp_user_token", "") ?: "") }
+    var saved by remember { mutableStateOf(apiKey.isNotBlank() && userToken.isNotBlank()) }
     Page(modifier) {
         Heading("PREFERENCES", "More")
+        Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark), shape = RoundedCornerShape(22.dp)) {
+            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("ABRP CONNECTION", color = Aqua, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
+                Text("Add your ABRP credentials", color = MainText, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                Text("ABRP uses two separate credentials for generic telemetry: an application Telemetry API key and your vehicle's ABRP user token.", color = SoftText, fontSize = 12.sp, lineHeight = 18.sp)
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = { apiKey = it; saved = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("ABRP Telemetry API key") },
+                    placeholder = { Text("Paste your API key") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                OutlinedTextField(
+                    value = userToken,
+                    onValueChange = { userToken = it; saved = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("ABRP vehicle user token") },
+                    placeholder = { Text("Paste your vehicle token") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                Button(
+                    onClick = {
+                        credentials.edit().putString("abrp_api_key", apiKey.trim())
+                            .putString("abrp_user_token", userToken.trim()).apply()
+                        saved = true
+                    },
+                    enabled = apiKey.isNotBlank() && userToken.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Aqua, contentColor = Ink)
+                ) { Text("Save ABRP credentials") }
+                Text(
+                    if (saved) "Credentials saved securely on this device." else "Credentials have not been saved.",
+                    color = if (saved) Aqua else SoftText,
+                    fontSize = 11.sp
+                )
+                Text("Create a free Telemetry API key in ABRP's API settings. Find the vehicle token in ABRP under your vehicle's Live Data setup → Generic → Copy Token.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
+                Text("Credentials are stored in encrypted app preferences and are not written into GitHub source code.", color = SoftText, fontSize = 10.sp, lineHeight = 15.sp)
+            }
+        }
         InfoPanel("Vehicle profile", "2026 BYD Yuan Pro · 45.1 kWh nominal battery")
         InfoPanel("Units", "Miles · MPH · °F")
         InfoPanel("Planned integrations", "ABRP telemetry · Open-Meteo weather · OpenStreetMap routing")
