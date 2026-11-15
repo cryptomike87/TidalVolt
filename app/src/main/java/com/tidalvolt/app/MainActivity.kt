@@ -24,12 +24,37 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import java.util.Locale
 
-private val Ink = Color(0xFF080B0E)
-private val SurfaceDark = Color(0xFF151B21)
-private val SurfaceRaised = Color(0xFF202A32)
-private val Aqua = Color(0xFF48D8D0)
-private val SoftText = Color(0xFF9EABB4)
-private val MainText = Color(0xFFF3F6F7)
+private data class TidalPalette(
+    val background: Color, val surface: Color, val raised: Color,
+    val accent: Color, val secondaryText: Color, val primaryText: Color,
+    val outline: Color
+)
+private val Obsidian = TidalPalette(
+    background = Color(0xFF08090B),
+    surface = Color(0xFF14171B),
+    raised = Color(0xFF20252B),
+    accent = Color(0xFF55D6CE),
+    secondaryText = Color(0xFFA3ADB7),
+    primaryText = Color(0xFFF4F6F8),
+    outline = Color(0xFF303840)
+)
+private val Pearl = TidalPalette(
+    background = Color(0xFFF5F4F0),
+    surface = Color(0xFFFFFFFF),
+    raised = Color(0xFFEAE9E4),
+    accent = Color(0xFF087F83),
+    secondaryText = Color(0xFF68737D),
+    primaryText = Color(0xFF182027),
+    outline = Color(0xFFD9DAD6)
+)
+private val LocalTidalPalette = androidx.compose.runtime.staticCompositionLocalOf { Obsidian }
+private val Ink: Color @Composable get() = LocalTidalPalette.current.background
+private val SurfaceDark: Color @Composable get() = LocalTidalPalette.current.surface
+private val SurfaceRaised: Color @Composable get() = LocalTidalPalette.current.raised
+private val Aqua: Color @Composable get() = LocalTidalPalette.current.accent
+private val SoftText: Color @Composable get() = LocalTidalPalette.current.secondaryText
+private val MainText: Color @Composable get() = LocalTidalPalette.current.primaryText
+private val OutlineTone: Color @Composable get() = LocalTidalPalette.current.outline
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,7 +66,28 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun TidalVoltRoot() {
     var page by remember { mutableIntStateOf(0) }
-    MaterialTheme(colorScheme = darkColorScheme(primary = Aqua, background = Ink, surface = SurfaceDark, onBackground = MainText, onSurface = MainText)) {
+    val context = LocalContext.current
+    val preferences = remember { context.getSharedPreferences("tidalvolt_preferences", android.content.Context.MODE_PRIVATE) }
+    var lightMode by remember { mutableStateOf(preferences.getBoolean("light_mode", false)) }
+    val palette = if (lightMode) Pearl else Obsidian
+    val scheme = if (lightMode) lightColorScheme(
+        primary = palette.accent, background = palette.background, surface = palette.surface,
+        onBackground = palette.primaryText, onSurface = palette.primaryText,
+        outline = palette.outline
+    ) else darkColorScheme(
+        primary = palette.accent, background = palette.background, surface = palette.surface,
+        onBackground = palette.primaryText, onSurface = palette.primaryText,
+        outline = palette.outline
+    )
+    CompositionLocalProvider(LocalTidalPalette provides palette) {
+    MaterialTheme(colorScheme = scheme, typography = Typography(
+        displayLarge = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif, fontWeight = FontWeight.Light),
+        headlineLarge = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif, fontWeight = FontWeight.Light),
+        titleLarge = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif, fontWeight = FontWeight.Medium),
+        bodyLarge = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif),
+        bodyMedium = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif),
+        labelMedium = androidx.compose.ui.text.TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif, letterSpacing = 0.3.sp)
+    )) {
         Scaffold(
             containerColor = Ink,
             bottomBar = {
@@ -64,9 +110,17 @@ private fun TidalVoltRoot() {
                 1 -> ChargingPage(Modifier.padding(padding))
                 2 -> SavingsPage(Modifier.padding(padding))
                 3 -> DrivingPage(Modifier.padding(padding))
-                else -> MorePage(Modifier.padding(padding))
+                else -> MorePage(
+                    Modifier.padding(padding),
+                    lightMode = lightMode,
+                    onThemeChange = { enabled ->
+                        lightMode = enabled
+                        preferences.edit().putBoolean("light_mode", enabled).apply()
+                    }
+                )
             }
         }
+    }
     }
 }
 
@@ -204,7 +258,11 @@ private fun DrivingPage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun MorePage(modifier: Modifier = Modifier) {
+private fun MorePage(
+    modifier: Modifier = Modifier,
+    lightMode: Boolean,
+    onThemeChange: (Boolean) -> Unit
+) {
     val context = LocalContext.current
     val credentials = remember {
         val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
@@ -221,6 +279,31 @@ private fun MorePage(modifier: Modifier = Modifier) {
     var saved by remember { mutableStateOf(apiKey.isNotBlank() && userToken.isNotBlank()) }
     Page(modifier) {
         Heading("PREFERENCES", "More")
+        Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark), shape = RoundedCornerShape(22.dp)) {
+            Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("APPEARANCE", color = Aqua, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
+                Text("Choose your TidalVolt finish", color = MainText, fontSize = 17.sp, fontWeight = FontWeight.Medium)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FilterChip(
+                        selected = !lightMode,
+                        onClick = { onThemeChange(false) },
+                        label = { Text("Obsidian Black") },
+                        leadingIcon = { Icon(Icons.Default.DarkMode, null) },
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Aqua.copy(alpha = .18f), selectedLabelColor = MainText, selectedLeadingIconColor = Aqua),
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = lightMode,
+                        onClick = { onThemeChange(true) },
+                        label = { Text("Pearl White") },
+                        leadingIcon = { Icon(Icons.Default.LightMode, null) },
+                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Aqua.copy(alpha = .18f), selectedLabelColor = MainText, selectedLeadingIconColor = Aqua),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Text(if (lightMode) "Pearl White · soft ivory background, clean white cards and deep slate text." else "Obsidian Black · near-black surfaces, cool white typography and a subtle teal accent.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
+            }
+        }
         Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark), shape = RoundedCornerShape(22.dp)) {
             Column(Modifier.fillMaxWidth().padding(17.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("ABRP CONNECTION", color = Aqua, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
