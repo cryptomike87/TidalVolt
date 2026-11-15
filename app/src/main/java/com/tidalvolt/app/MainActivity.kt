@@ -30,13 +30,15 @@ private data class TidalPalette(
     val outline: Color
 )
 private val Obsidian = TidalPalette(
-    background = Color(0xFF08090B),
-    surface = Color(0xFF14171B),
-    raised = Color(0xFF20252B),
-    accent = Color(0xFF55D6CE),
-    secondaryText = Color(0xFFA3ADB7),
-    primaryText = Color(0xFFF4F6F8),
-    outline = Color(0xFF303840)
+    // Warm charcoal avoids the stark contrast of pure black and pure white.
+    background = Color(0xFF171614),
+    surface = Color(0xFF211F1B),
+    raised = Color(0xFF2C2923),
+    // Muted sage is calmer than a highly saturated neon accent.
+    accent = Color(0xFFA8B99A),
+    secondaryText = Color(0xFFB7AEA0),
+    primaryText = Color(0xFFE7E0D4),
+    outline = Color(0xFF403B33)
 )
 private val Pearl = TidalPalette(
     background = Color(0xFFF5F4F0),
@@ -301,7 +303,7 @@ private fun MorePage(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                Text(if (lightMode) "Pearl White · soft ivory background, clean white cards and deep slate text." else "Obsidian Black · near-black surfaces, cool white typography and a subtle teal accent.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
+                Text(if (lightMode) "Pearl White · soft ivory background, clean white cards and deep slate text." else "Obsidian Black · warm charcoal surfaces, soft ivory text and a muted sage accent designed to avoid harsh contrast.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
             }
         }
         Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark), shape = RoundedCornerShape(22.dp)) {
