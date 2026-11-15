@@ -2,8 +2,6 @@ package com.tidalvolt.app
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.location.Location
-import android.location.LocationManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -27,12 +25,24 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
+private val NassauPoint = GeoPoint(25.0479, -77.3554)
+
 @Composable
 internal fun MapPage(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    var locationMessage by remember { mutableStateOf("Map centered on Nassau. Tap locate to use your position.") }
+    var locationMessage by remember { mutableStateOf("Map centered on Nassau · Location not enabled") }
     var mapView by remember { mutableStateOf<MapView?>(null) }
     var locationOverlay by remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+
+    fun enableLocation(map: MapView) {
+        val overlay = locationOverlay ?: MyLocationNewOverlay(GpsMyLocationProvider(context), map).also {
+            locationOverlay = it
+            map.overlays.add(it)
+        }
+        overlay.enableMyLocation()
+        overlay.enableFollowLocation()
+        locationMessage = "Finding your location…"
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -41,15 +51,9 @@ internal fun MapPage(modifier: Modifier = Modifier) {
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         val map = mapView
         if (granted && map != null) {
-            val overlay = locationOverlay ?: MyLocationNewOverlay(GpsMyLocationProvider(context), map).also {
-                locationOverlay = it
-                map.overlays.add(it)
-            }
-            overlay.enableMyLocation()
-            overlay.enableFollowLocation()
-            locationMessage = "Location enabled. GPS accuracy depends on signal."
+            enableLocation(map)
         } else {
-            locationMessage = "Location permission was not granted. The map still works without it."
+            locationMessage = "Location permission denied · Map remains available"
         }
     }
 
@@ -61,82 +65,89 @@ internal fun MapPage(modifier: Modifier = Modifier) {
         }
     }
 
-    Column(
-        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Text("EXPLORE", color = Aqua, fontSize = 10.sp, letterSpacing = 2.sp)
-        Text("Map", color = MainText, fontSize = 29.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Light)
-        Card(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            shape = RoundedCornerShape(22.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceDark)
-        ) {
-            AndroidView(
-                modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
-                    MapView(ctx).apply {
-                        setTileSource(TileSourceFactory.MAPNIK)
-                        setMultiTouchControls(true)
-                        controller.setZoom(12.0)
-                        controller.setCenter(GeoPoint(25.0479, -77.3554))
-                        mapView = this
-                    }
-                },
-                update = { map ->
-                    mapView = map
+    Box(modifier = modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                MapView(ctx).apply {
+                    setTileSource(TileSourceFactory.MAPNIK)
+                    setMultiTouchControls(true)
+                    controller.setZoom(12.0)
+                    controller.setCenter(NassauPoint)
+                    mapView = this
                 }
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            },
+            update = { map -> mapView = map }
+        )
+
+        Surface(
+            modifier = Modifier.align(Alignment.TopStart).padding(14.dp),
+            color = SurfaceDark.copy(alpha = .94f),
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 5.dp
         ) {
-            Button(
-                onClick = {
-                    val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                    if (fine || coarse) {
-                        val map = mapView
-                        if (map != null) {
-                            val overlay = locationOverlay ?: MyLocationNewOverlay(GpsMyLocationProvider(context), map).also {
-                                locationOverlay = it
-                                map.overlays.add(it)
-                            }
-                            overlay.enableMyLocation()
-                            overlay.enableFollowLocation()
-                            locationMessage = "Location enabled. GPS accuracy depends on signal."
-                        }
-                    } else {
-                        permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION))
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Aqua, contentColor = Ink)
-            ) {
-                Icon(Icons.Default.MyLocation, contentDescription = null)
-                Spacer(Modifier.width(7.dp))
-                Text("Locate me")
-            }
-            OutlinedButton(
-                onClick = {
-                    mapView?.controller?.animateTo(GeoPoint(25.0479, -77.3554))
-                    mapView?.controller?.setZoom(12.0)
-                    locationMessage = "Map centered on Nassau."
-                },
-                modifier = Modifier.weight(1f)
-            ) {
-                Icon(Icons.Default.LocationOn, contentDescription = null)
-                Spacer(Modifier.width(5.dp))
-                Text("Nassau")
+            Column(Modifier.padding(horizontal = 15.dp, vertical = 10.dp)) {
+                Text("TIDALVOLT MAP", color = Aqua, fontSize = 10.sp, letterSpacing = 1.4.sp)
+                Text("Explore", color = MainText, fontSize = 18.sp)
             }
         }
-        Text(locationMessage, color = SoftText, fontSize = 11.sp)
-        Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark), shape = RoundedCornerShape(16.dp)) {
-            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("EV range map", color = MainText, fontSize = 15.sp)
-                Text("Road-based reachable range, charging stations and route energy estimates will appear here once vehicle telemetry and routing calculations are connected. No range circle or live battery value is fabricated.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
+
+        Column(
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                color = SurfaceDark.copy(alpha = .94f),
+                shape = RoundedCornerShape(12.dp),
+                tonalElevation = 4.dp
+            ) {
+                Text(
+                    locationMessage,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 13.dp, vertical = 9.dp),
+                    color = SoftText,
+                    fontSize = 11.sp
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = {
+                        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        val map = mapView
+                        if (fine || coarse) {
+                            if (map != null) enableLocation(map)
+                        } else {
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    Manifest.permission.ACCESS_FINE_LOCATION
+                                )
+                            )
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Aqua, contentColor = Ink)
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = null)
+                    Spacer(Modifier.width(7.dp))
+                    Text("Locate me")
+                }
+                OutlinedButton(
+                    onClick = {
+                        mapView?.controller?.animateTo(NassauPoint)
+                        mapView?.controller?.setZoom(12.0)
+                        locationMessage = "Map centered on Nassau"
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = SurfaceDark.copy(alpha = .94f),
+                        contentColor = MainText
+                    )
+                ) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null)
+                    Spacer(Modifier.width(5.dp))
+                    Text("Nassau")
+                }
             }
         }
     }
