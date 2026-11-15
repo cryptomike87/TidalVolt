@@ -94,8 +94,8 @@ private fun TidalVoltRoot() {
             containerColor = Ink,
             bottomBar = {
                 NavigationBar(containerColor = SurfaceDark) {
-                    val labels = listOf("Vehicle", "Charge", "Savings", "Drive", "More")
-                    val icons = listOf(Icons.Default.DirectionsCar, Icons.Default.Bolt, Icons.Default.Savings, Icons.Default.Route, Icons.Default.Tune)
+                    val labels = listOf("Vehicle", "Map", "Charge", "Savings", "Drive", "More")
+                    val icons = listOf(Icons.Default.DirectionsCar, Icons.Default.Map, Icons.Default.Bolt, Icons.Default.Savings, Icons.Default.Route, Icons.Default.Tune)
                     labels.forEachIndexed { i, label ->
                         NavigationBarItem(
                             selected = page == i, onClick = { page = i },
@@ -109,9 +109,10 @@ private fun TidalVoltRoot() {
         ) { padding ->
             when (page) {
                 0 -> VehiclePage(Modifier.padding(padding))
-                1 -> ChargingPage(Modifier.padding(padding))
-                2 -> SavingsPage(Modifier.padding(padding))
-                3 -> DrivingPage(Modifier.padding(padding))
+                1 -> MapPage(Modifier.padding(padding))
+                2 -> ChargingPage(Modifier.padding(padding))
+                3 -> SavingsPage(Modifier.padding(padding))
+                4 -> DrivingPage(Modifier.padding(padding))
                 else -> MorePage(
                     Modifier.padding(padding),
                     lightMode = lightMode,
