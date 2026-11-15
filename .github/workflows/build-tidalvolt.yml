@@ -1,0 +1,87 @@
+name: TidalVolt Android Build
+
+on:
+  push:
+    paths:
+      - "TidalVolt-Charging-Locations-Fixed.zip"
+      - ".github/workflows/build-tidalvolt.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tidalvolt-android-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile, test and package TidalVolt
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "TidalVolt-Charging-Locations-Fixed.zip" ]]; then
+            echo "::error::Missing TidalVolt-Charging-Locations-Fixed.zip. Upload the fixed source ZIP to the repository root first."
+            exit 1
+          fi
+          unzip -t "TidalVolt-Charging-Locations-Fixed.zip"
+
+      - name: Extract Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/tidalvolt-source"
+          unzip -q "TidalVolt-Charging-Locations-Fixed.zip" -d "$RUNNER_TEMP/tidalvolt-source"
+          PROJECT_DIR="$RUNNER_TEMP/tidalvolt-source/src/Byds--main"
+          test -f "$PROJECT_DIR/settings.gradle.kts"
+          test -f "$PROJECT_DIR/build.gradle.kts"
+          test -f "$PROJECT_DIR/app/build.gradle.kts"
+          echo "TIDALVOLT_PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.3.1"
+
+      - name: Create CI debug signing key
+        working-directory: ${{ env.TIDALVOLT_PROJECT_DIR }}
+        run: |
+          keytool -genkeypair -v \
+            -keystore debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Run unit tests and compile debug APK
+        working-directory: ${{ env.TIDALVOLT_PROJECT_DIR }}
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TidalVolt-debug-apk
+          path: ${{ env.TIDALVOLT_PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
