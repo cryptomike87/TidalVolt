@@ -21,8 +21,12 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v3
+        with:
+          # v3 defaults to the obsolete "tools" package, which Google no longer serves.
+          packages: ""
+      - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
