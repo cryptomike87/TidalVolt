@@ -93,9 +93,38 @@ internal fun MapPage(modifier: Modifier = Modifier) {
         }
 
         Column(
-            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(14.dp),
+            modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Compact route summary floats over the map; values stay blank until a real route is calculated.
+            Surface(
+                modifier = Modifier.align(Alignment.End).widthIn(min = 174.dp, max = 210.dp),
+                color = SurfaceDark.copy(alpha = .96f),
+                shape = RoundedCornerShape(16.dp),
+                tonalElevation = 6.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Text("ARRIVAL ESTIMATE", color = Aqua, fontSize = 9.sp, letterSpacing = 1.3.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Arrival time", color = SoftText, fontSize = 10.sp)
+                            Text("--:--", color = MainText, fontSize = 19.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+                        }
+                        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Battery on arrival", color = SoftText, fontSize = 10.sp)
+                            Text("--%", color = MainText, fontSize = 19.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+                        }
+                    }
+                    Text("Choose a destination to calculate", color = SoftText, fontSize = 9.sp)
+                }
+            }
             Surface(
                 color = SurfaceDark.copy(alpha = .94f),
                 shape = RoundedCornerShape(12.dp),
