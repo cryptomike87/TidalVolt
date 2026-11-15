@@ -33,11 +33,13 @@ jobs:
           gradle-version: "8.13"
       - name: Unit tests
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
-      - name: Build debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Build TidalVolt and Companion debug APKs
+        run: gradle :app:assembleDebug :companion:assembleDebug --no-daemon --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: TidalVolt-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: TidalVolt-and-Companion-debug-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            companion/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
