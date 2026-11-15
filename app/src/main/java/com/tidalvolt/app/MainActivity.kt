@@ -41,13 +41,13 @@ private val Obsidian = TidalPalette(
     outline = Color(0xFF403B33)
 )
 private val Pearl = TidalPalette(
-    background = Color(0xFFF5F4F0),
-    surface = Color(0xFFFFFFFF),
-    raised = Color(0xFFEAE9E4),
-    accent = Color(0xFF087F83),
-    secondaryText = Color(0xFF68737D),
-    primaryText = Color(0xFF182027),
-    outline = Color(0xFFD9DAD6)
+    background = Color(0xFFF7F6F2),
+    surface = Color(0xFFFFFDF8),
+    raised = Color(0xFFEFEEE8),
+    accent = Color(0xFF397D78),
+    secondaryText = Color(0xFF707873),
+    primaryText = Color(0xFF26302F),
+    outline = Color(0xFFE4E2DA)
 )
 private val LocalTidalPalette = androidx.compose.runtime.staticCompositionLocalOf { Obsidian }
 private val Ink: Color @Composable get() = LocalTidalPalette.current.background
@@ -303,7 +303,7 @@ private fun MorePage(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                Text(if (lightMode) "Pearl White · soft ivory background, clean white cards and deep slate text." else "Obsidian Black · warm charcoal surfaces, soft ivory text and a muted sage accent designed to avoid harsh contrast.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
+                Text(if (lightMode) "Pearl White · bright warm-ivory background, gentle white cards and calm slate text with a muted teal accent." else "Obsidian Black · warm charcoal surfaces, soft ivory text and a muted sage accent designed to avoid harsh contrast.", color = SoftText, fontSize = 11.sp, lineHeight = 16.sp)
             }
         }
         Card(colors = CardDefaults.cardColors(containerColor = SurfaceDark), shape = RoundedCornerShape(22.dp)) {
